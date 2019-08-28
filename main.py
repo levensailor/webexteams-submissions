@@ -24,19 +24,26 @@ run_every = 60
 '''
 Set your webex api token and roomId if send_link_to_space = True
 '''
-token = 'webex token goes here'
+
+#token = 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdf'
+token = 'OTY5MTViYTYtZDlhNy00MTk5LTg1YzEtMDAzZWNlZWRiYmY1OTg4MDQwNmEtZGM5'
+#roomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vZjJlMzY2MDAtOWU1NC0xMWU3LWJlNjEtNzE3ZGU4MmRiMWFi'
+#roomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vZmQwMDJlYTAtZWM3MC0xMWU4LThmYmMtYjUwMGU5Mjg0NDA1'
+roomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMzhmMGExMzAtZWQwYS0xMWU4LTk3ZWMtMzdhYWQwNWM3Yzhj'
+
+#token = 'webex token goes here'
 api = WebexTeamsAPI(access_token=token)
 headers = {'Authorization': 'Bearer '+token}
 
-send_link_to_space = False #Specify submissions space by roomId below
-roomId = 'webex roomid goes here'
+send_link_to_space = True #Specify submissions space by roomId below
+roomId = 'Y2lzY29zcGFyazovL3VzL1JPT00vMzhmMGExMzAtZWQwYS0xMWU4LTk3ZWMtMzdhYWQwNWM3Yzhj'
 
 '''
 Setup your Dropbox account with api key and directory for submissions
 '''
-dbx_token = 'dropbox token goes here'
+dbx_token = '8EQgw4OGBecAAAAAAAAnYtsjMSxo02XzQGpAKpo6Ljm3f_Aa6Ww4k-EnLEm0Z4iR'
 dbx = dropbox.Dropbox(dbx_token)
-dbx_dir = 'team' #Specify the subdirectory on Dropbox to store files
+dbx_dir = 'teams' #Specify the subdirectory on Dropbox to store files
 
 '''
 Some utility functions
@@ -76,12 +83,14 @@ def find_roomId():
 def find_direct():
     spaces = []
     response = requests.request("GET", "https://api.ciscospark.com/v1/rooms?type=direct", headers=headers)
-    data = json.loads(response.text)['items']
-    for directs in data:
-        try:
-            spaces.append(directs)
-        except KeyError:
-            pass
+    data = json.loads(response.text)
+    if 'items' in data:
+        data = data['items']
+        for directs in data:
+            try:
+                spaces.append(directs)
+            except KeyError:
+                pass
     return spaces
 
 def find_group():
@@ -158,22 +167,26 @@ def save(file, title):
         return res
 
 def main():
+    names = ["Candace Davis"]
     spaces = find_direct()
     for space in spaces:
-        messages = api.messages.list(space['id'])
-        for message in messages:
-            if message.files is not None:
-                if is_new_message(round(message.created.timestamp())):
-                    try:
-                        each = api.messages.get(message.id)
-                        for data in each.files:
-                            file = save(data, space['title'])
-                            upload_to_dropbox(file)
-                            if send_link_to_space:
-                                url = create_dropbox_link(file)
-                                send_link_to_webex(roomId, space['title'], url)
-                    except ApiError as e:
-                        pass
+        for left in names:
+            if space['title'] == left:
+                messages = api.messages.list(space['id'])
+                for message in messages:
+                    if message.files is not None:
+                        if is_new_message(round(message.created.timestamp())):
+                            try:
+                                each = api.messages.get(message.id)
+                                for data in each.files:
+                                    file = save(data, space['title'])
+                                    upload_to_dropbox(file)
+                                    if send_link_to_space:
+                                        url = create_dropbox_link(file)
+                                        print(url)
+                                        send_link_to_webex(roomId, space['title'], url)
+                            except ApiError as e:
+                                pass
 
 while True:
     for index, char in enumerate("." * run_every):
